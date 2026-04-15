@@ -1,0 +1,85 @@
+param(
+    [Parameter(Mandatory)]
+    [string]$vCenter,
+
+    [Parameter(Mandatory)]
+    [string]$clusterName,
+
+    [Parameter(Mandatory)]
+    [string]$breakGlassUser
+)
+
+$powerCLI = Get-Module -Name VMware.PowerCLI
+if (!$powerCLI) {
+    Import-Module VMware.PowerCLI -ErrorAction Stop
+}
+Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
+
+$credential = Get-Credential -Message "Enter credentials for $vCenter"
+$vcenterCheck = Connect-VIServer -Server $vCenter -Credential $Credential -ErrorAction SilentlyContinue
+
+if ($vcenterCheck.IsConnected -eq $true) {
+    Write-Host "Successfully connected to vCenter Server $vCenter"
+} else {
+    Write-Error "Error connecting to vCenter Server $vCenter. Please validate FQDN/IP and credentials."
+    $vcenterBroke = $true
+    Exit
+}
+
+Write-Host "The vpxuser account needs to be configured to have shell access before you start. Log in to the shell of your ESXi host and run 'esxcli system account set -i vpxuser -s true'."
+
+try {
+    $vmhosts = Get-VMHost -Location $cluster
+
+    foreach ($vmhost in $vmhosts) {
+        $esxcli = Get-EsxCli -VMhost $vmhost -V2
+
+        #Check root account config
+        $rootAccountAdmin = $esxcli.system.permission.list.Invoke() | Where-Object {$_.Principal -eq "root"}
+        if ($rootAccountAdmin.Role -ne "Admin") {
+            $arguments = $null
+            $arguments = $esxcli.system.permission.set.CreateArgs()
+            $arguments.id = 'root'
+            $arguments.role = 'Admin'
+
+            $esxcli.system.permission.set.Invoke($arguments) | Out-Null
+
+            $checkRootAccountAdmin = $esxcli.system.permission.list.Invoke() | Where-Object {$_.Principal -eq "root"}
+            if ($checkrootAccountAdmin.Role -eq "Admin") {
+                Write-Host "[$($vmhost.Name)] Root permissions have been successfully set to Admin."
+            } else {
+                Write-Host "[$($vmhost.Name)] Root permissions were not successfully set to Admin. Exiting."
+                Exit
+            }
+        } else {
+            Write-Host "[$($vmhost.Name)] Root permissions are already set to Admin. Skipping."            
+        }
+
+        #Check to see if the account still exists
+        $accountAdmin = $esxcli.system.account.list.Invoke() | Where-Object {$_.UserID -eq $breakGlassUser}
+        
+        #If the account exists, remove it
+        if ($accountAdmin) {
+            $arguments = $null
+            $arguments = $esxcli.system.account.remove.CreateArgs()
+            $arguments.id = $breakGlassUser
+
+            $esxcli.system.account.remove.Invoke($arguments) | Out-Null
+
+            $checkesxAccounts = $esxcli.system.account.list.Invoke()
+            $checknewAccount = $checkesxAccounts | Where-Object {$_.UserID -eq $breakGlassUser}
+            if (!$checkNewAccount) {
+                Write-Host "[$($vmhost.Name)] User $breakGlassUser has been successfully removed."
+            } else {
+                Write-Host "[$($vmhost.Name)] User $breakGlassUser was not successfully removed."
+            }
+        } else {
+            Write-Host "[$($vmhost.Name)] User $breakGlassUser does not exist. Skipping."
+        }
+        Write-Host ""
+    }
+} finally {
+    if (!$vcenterBroke) {
+        Disconnect-VIServer -Server * -Confirm:$false | Out-Null
+    }
+}
