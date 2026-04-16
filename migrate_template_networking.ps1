@@ -67,7 +67,6 @@ try {
             $nics = $convertedVM | Get-NetworkAdapter
             foreach ($nic in $nics) {
                 if ($nic.NetworkName -eq $sourceNetwork) {
-                    Write-Output "[$($template.Name)] $($nic.Name) is set to $($nic.NetworkName)"
                     $nic | Set-NetworkAdapter -PortGroup $DestinationNetwork -Confirm:$false | Out-Null
                     $nicUpdatedNetwork = ($convertedVM | Get-NetworkAdapter | Where-Object {$_.Name -eq $nic.Name}).NetworkName
                     if ($nicUpdatedNetwork -eq $destinationNetwork) {
@@ -88,8 +87,6 @@ try {
             }
             
             Write-Output ""
-        } else {
-
         }
     }
 } finally {
