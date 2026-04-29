@@ -9,7 +9,13 @@ param(
     [string]$breakGlassUser,
 
     [Parameter(Mandatory)]
-    [string]$breakGlassPassword
+    [string]$breakGlassPassword,
+
+    [Parameter()]
+    [switch]$disableRoot,
+
+    [Parameter()]
+    [switch]$disableVpxuser
 )
 
 $powerCLI = Get-Module -Name VMware.PowerCLI
@@ -106,48 +112,53 @@ try {
         }
     
         #Check root account config
-        $rootAccountAdmin = $esxcli.system.permission.list.Invoke() | Where-Object {$_.Principal -eq "root"}
-        if ($rootAccountAdmin.Role -eq "NoAccess") {
-            Write-Host "[$($vmhost.Name)] Root permissions are already set to NoAccess. Skipping."            
-        } else {
-            $arguments = $null
-            $arguments = $esxcli.system.permission.set.CreateArgs()
-            $arguments.id = 'root'
-            $arguments.role = 'NoAccess'
-
-            $esxcli.system.permission.set.Invoke($arguments) | Out-Null
-
-            $checkRootAccountAdmin = $esxcli.system.permission.list.Invoke() | Where-Object {$_.Principal -eq "root"}
-            if ($checkRootAccountAdmin.Role -eq "NoAccess") {
-                Write-Host "[$($vmhost.Name)] Root permissions have been successfully set to NoAccess."
+        if ($disableRoot -eq $true) {
+            $rootAccountAdmin = $esxcli.system.permission.list.Invoke() | Where-Object {$_.Principal -eq "root"}    
+            if ($rootAccountAdmin.Role -eq "NoAccess") {
+                Write-Host "[$($vmhost.Name)] Root permissions are already set to NoAccess. Skipping."            
             } else {
-                Write-Host "[$($vmhost.Name)] Root permissions were not successfully set to NoAccess. Exiting."
-                Exit
+                $arguments = $null
+                $arguments = $esxcli.system.permission.set.CreateArgs()
+                $arguments.id = 'root'
+                $arguments.role = 'NoAccess'
+
+                $esxcli.system.permission.set.Invoke($arguments) | Out-Null
+
+                $checkRootAccountAdmin = $esxcli.system.permission.list.Invoke() | Where-Object {$_.Principal -eq "root"}
+                if ($checkRootAccountAdmin.Role -eq "NoAccess") {
+                    Write-Host "[$($vmhost.Name)] Root permissions have been successfully set to NoAccess."
+                } else {
+                    Write-Host "[$($vmhost.Name)] Root permissions were not successfully set to NoAccess. Exiting."
+                    Exit
+                }
             }
         }
+        
+        if ($disableVpxuser -eq $true) {
+            $shellAccess = $null
+            $shellAccess = $esxcli.system.account.list.Invoke() | Where-Object {$_.UserID -eq "vpxuser"}
 
-        $shellAccess = $null
-        $shellAccess = $esxcli.system.account.list.Invoke() | Where-Object {$_.UserID -eq "vpxuser"}
-
-        #check to see if $account already has shell access disabled
-        if ($shellaccess.shellaccess -eq $false) {
-            "[$($vmhost.Name)] ESXi shell access for user vpxuser is already disabled. Skipping."
-        } else {
-            $arguments = $null
-            $arguments = $esxcli.system.account.set.CreateArgs()
-            $arguments.id = "vpxuser"
-            $arguments.shellaccess = $false
-
-            $esxcli.system.account.set.Invoke($arguments) | Out-Null
-            
-            $checkShellAccess = $null
-            $checkShellAccess = $esxcli.system.account.list.Invoke() | Where-Object {$_.UserID -eq "vpxuser"}
-            if ($checkShellAccess.shellaccess -eq $false) {
-                "[$($vmhost.Name)] ESXi shell access for user vpxuser was successfully disabled."
+            #check to see if $account already has shell access disabled
+            if ($shellaccess.shellaccess -eq $false) {
+                "[$($vmhost.Name)] ESXi shell access for user vpxuser is already disabled. Skipping."
             } else {
-                "[$($vmhost.Name)] ESXi shell access for user vpxuser was not successfully disabled."
+                $arguments = $null
+                $arguments = $esxcli.system.account.set.CreateArgs()
+                $arguments.id = "vpxuser"
+                $arguments.shellaccess = $false
+
+                $esxcli.system.account.set.Invoke($arguments) | Out-Null
+                
+                $checkShellAccess = $null
+                $checkShellAccess = $esxcli.system.account.list.Invoke() | Where-Object {$_.UserID -eq "vpxuser"}
+                if ($checkShellAccess.shellaccess -eq $false) {
+                    "[$($vmhost.Name)] ESXi shell access for user vpxuser was successfully disabled."
+                } else {
+                    "[$($vmhost.Name)] ESXi shell access for user vpxuser was not successfully disabled."
+                }
             }
         }
+        
 
         Write-Host ""
     }
