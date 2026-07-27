@@ -1,4 +1,4 @@
-# VMware vSphere Security Configuration PowerShell
+# PowerShell module for VMware vSphere security configuration 
 
 A PowerShell module for configuring and validating security-related settings on VMware vSphere, including ESXi host firewall rules, Lockdown Mode, local ESXi users, TPM, Secure Boot, `execInstalledOnly`, and the vCenter Server Appliance firewall.
 
