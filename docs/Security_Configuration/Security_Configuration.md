@@ -1,15 +1,3 @@
----
-document type: module
-Help Version: 1.0.0.0
-HelpInfoUri: 
-Locale: en-US
-Module Guid: f39c811c-44df-43ce-8e18-a6dc93e69546
-Module Name: Security_Configuration
-ms.date: 07/27/2026
-PlatyPS schema version: 2024-05-01
-title: Security_Configuration Module
----
-
 # Security_Configuration Module
 
 ## Description
