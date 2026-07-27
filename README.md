@@ -106,7 +106,7 @@ The complete PlatyPS-generated module reference is available in [Security_Config
 | [`Remove-EsxiUser`](docs/Security_Configuration/Remove-EsxiUser.md) | Removes a local user from an ESXi host. |
 | [`Reset-EsxiUserPassword`](docs/Security_Configuration/Reset-EsxiUserPassword.md) | Resets the password of a local ESXi user. |
 
-### TPM and Recovery
+### TPM and Recovery Key
 
 | Cmdlet | Description |
 |---|---|
@@ -131,39 +131,6 @@ The complete PlatyPS-generated module reference is available in [Security_Config
 |---|---|
 | [`Get-VCSAFirewallConfig`](docs/Security_Configuration/Get-VCSAFirewallConfig.md) | Gets the firewall configuration of a vCenter Server Appliance. |
 | [`Set-VCSAFirewallConfig`](docs/Security_Configuration/Set-VCSAFirewallConfig.md) | Sets the firewall configuration of a vCenter Server Appliance. |
-
-## Updating the PlatyPS Documentation
-
-After changing comment-based help or adding a cmdlet, regenerate or update the Markdown help with PlatyPS.
-
-A typical workflow is:
-
-```powershell
-Install-Module -Name Microsoft.PowerShell.PlatyPS -Scope CurrentUser
-Import-Module ./Security_Configuration.psd1 -Force
-
-# Update existing Markdown help from the loaded module.
-Update-MarkdownCommandHelp `
-    -Path ./docs/Security_Configuration `
-    -RefreshModulePage
-```
-
-To generate external help XML from the Markdown documentation:
-
-```powershell
-New-ExternalHelp `
-    -Path ./docs/Security_Configuration `
-    -OutputPath ./en-US `
-    -Force
-```
-
-PlatyPS command names and parameters can vary by PlatyPS version. Check the installed version and its local help before running the documentation workflow:
-
-```powershell
-Get-Module -ListAvailable Microsoft.PowerShell.PlatyPS
-Get-Help Update-MarkdownCommandHelp -Full
-Get-Help New-ExternalHelp -Full
-```
 
 ## Contributing
 
