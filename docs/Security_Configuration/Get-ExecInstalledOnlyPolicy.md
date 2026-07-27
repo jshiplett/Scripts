@@ -1,14 +1,3 @@
----
-document type: cmdlet
-external help file: Security_Configuration-Help.xml
-HelpUri: ''
-Locale: en-US
-Module Name: Security_Configuration
-ms.date: 07/27/2026
-PlatyPS schema version: 2024-05-01
-title: Get-ExecInstalledOnlyPolicy
----
-
 # Get-ExecInstalledOnlyPolicy
 
 ## SYNOPSIS
