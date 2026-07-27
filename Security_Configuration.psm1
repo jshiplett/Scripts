@@ -1360,20 +1360,8 @@ Function Set-ESXiHostFirewallRuleset {
                 Set-ESXiHostFirewall -ESXiHost $ESXiHost -Enabled $false | Out-Null
 
                 $checkFirewallConfig = Get-ESXiHostFirewall -ESXiHost $ESXiHost
-                if ($checkFirewallConfig.Enabled -eq $false) {
-                    if ($AddSubnet -and $getFirewallRuleset.AllowedIPAddresses -match "all") {
-                        $arguments = $esxcli.network.firewall.ruleset.set.CreateArgs()
-                        $arguments.allowedall = $false
-                        $arguments.rulesetid = $getFirewallRuleset.Ruleset
-                        
-                        $esxcli.network.firewall.ruleset.set.Invoke($arguments) | Out-Null
-
-                        $getFirewallRulesetConfig = Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset
-                        if ($getFirewallRulesetConfig.AllowedIPAddresses -match "all") {
-                            Write-Error "[$ESXiHost] Unable to verify ESXi host firewall ruleset $($getFirewallRuleset.Ruleset) Allow All policy has been disabled."
-                            $errorTrue = $true
-                        }
-                    }
+                if ($checkFirewallConfig.Enabled -eq $true) {
+                    Write-Error "[$ESXiHost] ESXi host firewall was not successfully disabled."
                 }
             }
             if ($AllowAll.isPresent) {
@@ -1384,9 +1372,12 @@ Function Set-ESXiHostFirewallRuleset {
                     $existingSubnets = @()
                     $existingSubnets = ((Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset).AllowedIPAddresses).Split(",")
 
-                    foreach($existingSubnet in $existingSubnets) {
-                        Set-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset -RemoveSubnet $existingSubnet | Out-Null
+                    if ($existingSubnets -ne "") {
+                        foreach($existingSubnet in $existingSubnets) {
+                            Set-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset -RemoveSubnet $existingSubnet | Out-Null
+                        }
                     }
+                    
                     $arguments = $esxcli.network.firewall.ruleset.set.CreateArgs()
                     $arguments.allowedall = $true
                     $arguments.rulesetid = $getFirewallRuleset.Ruleset
@@ -1405,6 +1396,20 @@ Function Set-ESXiHostFirewallRuleset {
             } else {
                 if ($AddSubnet) {
                     $checkSubnetPresent = Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset
+
+                    if ($AddSubnet -and $getFirewallRuleset.AllowedIPAddresses -match "All") {
+                        $arguments = $esxcli.network.firewall.ruleset.set.CreateArgs()
+                        $arguments.allowedall = $false
+                        $arguments.rulesetid = $getFirewallRuleset.Ruleset
+                        
+                        $esxcli.network.firewall.ruleset.set.Invoke($arguments) | Out-Null
+
+                        $getFirewallRulesetConfig = Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset
+                        if ($getFirewallRulesetConfig.AllowedIPAddresses -match "all") {
+                            Write-Error "[$ESXiHost] Unable to verify ESXi host firewall ruleset $($getFirewallRuleset.Ruleset) Allow All policy has been disabled."
+                            $errorTrue = $true
+                        }
+                    }
 
                     if ($checkSubnetPresent.AllowedIPAddresses -match $AddSubnet) {
                         Write-Error "[$ESXiHost] ESXi host firewall ruleset $($getFirewallRuleset.Ruleset) already contains the subnet $AddSubnet."
