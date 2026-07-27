@@ -1449,6 +1449,9 @@ Function Set-ESXiHostFirewallRuleset {
                             Write-Error "[$ESXiHost] ESXi host firewall ruleset $($getFirewallRuleset.Ruleset) has not been successfully updated."
                             $errorTrue = $true
                         }
+                        if ($getFirewallRulesetAllowedIPAddresses.AllowedIPAddresses -eq "") {
+                            Set-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset -AllowAll | Out-Null
+                        }
                     }
                 }
             }
