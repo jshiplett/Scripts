@@ -1369,14 +1369,15 @@ Function Set-ESXiHostFirewallRuleset {
                     Write-Error "[$ESXiHost] ESXi host firewall ruleset $($getFirewallRuleset.Ruleset) already has an Allow All policy set."
                     $errorTrue = $true
                 } else {
-                    $existingSubnets = @()
+                    <# $existingSubnets = @()
                     $existingSubnets = ((Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset).AllowedIPAddresses).Split(",")
 
                     if ($existingSubnets -ne "") {
                         foreach($existingSubnet in $existingSubnets) {
+                            Write-Output "Existing subnet: $existingSubnet"
                             Set-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset -RemoveSubnet $existingSubnet | Out-Null
                         }
-                    }
+                    } #>
                     
                     $arguments = $esxcli.network.firewall.ruleset.set.CreateArgs()
                     $arguments.allowedall = $true
@@ -1415,13 +1416,17 @@ Function Set-ESXiHostFirewallRuleset {
                         Write-Error "[$ESXiHost] ESXi host firewall ruleset $($getFirewallRuleset.Ruleset) already contains the subnet $AddSubnet."
                         $errorTrue = $true
                     } else {
-                        $arguments = $esxcli.network.firewall.ruleset.allowedip.add.CreateArgs()
-                        $arguments.ipaddress = $AddSubnet
-                        $arguments.rulesetid = $getFirewallRuleset.Ruleset
+                        $checkSubnetHiding = Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset
+                        if (!$checkSubnetHiding) {
+                            $arguments = $esxcli.network.firewall.ruleset.allowedip.add.CreateArgs()
+                            $arguments.ipaddress = $AddSubnet
+                            $arguments.rulesetid = $getFirewallRuleset.Ruleset
 
-                        $esxcli.network.firewall.ruleset.allowedip.add.Invoke($arguments) | Out-Null
-
+                            $esxcli.network.firewall.ruleset.allowedip.add.Invoke($arguments) | Out-Null
+                        }
+                        
                         $getFirewallRulesetAllowedIPAddresses = Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset
+                        
                         if ($getFirewallRulesetAllowedIPAddresses.AllowedIPAddresses -match $AddSubnet) {
                             Write-Output "[$ESXiHost] Subnet $AddSubnet has been successfully added to the ESXi host firewall ruleset $($getFirewallRuleset.Ruleset)."
                         } else {
