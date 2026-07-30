@@ -1417,7 +1417,8 @@ Function Set-ESXiHostFirewallRuleset {
                         $errorTrue = $true
                     } else {
                         $checkSubnetHiding = Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset
-                        if (!$checkSubnetHiding) {
+
+                        if (!$checkSubnetHiding.AllowedIPAddresses) {
                             $arguments = $esxcli.network.firewall.ruleset.allowedip.add.CreateArgs()
                             $arguments.ipaddress = $AddSubnet
                             $arguments.rulesetid = $getFirewallRuleset.Ruleset
