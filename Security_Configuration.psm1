@@ -1362,13 +1362,22 @@ Function Set-ESXiHostFirewallRuleset {
                 $checkFirewallConfig = Get-ESXiHostFirewall -ESXiHost $ESXiHost
                 if ($checkFirewallConfig.Enabled -eq $true) {
                     Write-Error "[$ESXiHost] ESXi host firewall was not successfully disabled."
+                    $errorTrue = $true
                 }
             }
             if ($AllowAll.isPresent) {
                 if ($getFirewallRuleset.AllowedIPAddresses -match "all") {
                     Write-Error "[$ESXiHost] ESXi host firewall ruleset $($getFirewallRuleset.Ruleset) already has an Allow All policy set."
                     $errorTrue = $true
-                } else {                    
+                } else {         
+                    $checkexistingSubnets = Get-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset
+                    if ($checkexistingSubnets.AllowedIPAddresses -ne "") {
+                        $existingSubnets = $checkexistingSubnets.AllowedIPAddresses.Split(",")
+                        foreach ($existingSubnet in $existingSubnets) {
+                            Set-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset -RemoveSubnet $existingSubnet -ErrorAction SilentlyContinue | Out-Null
+                            $clearingAllowedSubnets = $true
+                        }
+                    }           
                     $arguments = $esxcli.network.firewall.ruleset.set.CreateArgs()
                     $arguments.allowedall = $true
                     $arguments.rulesetid = $getFirewallRuleset.Ruleset
@@ -1421,6 +1430,7 @@ Function Set-ESXiHostFirewallRuleset {
                             Write-Output "[$ESXiHost] Subnet $AddSubnet has been successfully added to the ESXi host firewall ruleset $($getFirewallRuleset.Ruleset)."
                         } else {
                             Write-Error "[$ESXiHost] Firewall ruleset $($getFirewallRuleset.Ruleset) has not been successfully updated."
+                            $errorTrue = $true
                         }
                     }
                 }
@@ -1444,7 +1454,7 @@ Function Set-ESXiHostFirewallRuleset {
                             Write-Error "[$ESXiHost] ESXi host firewall ruleset $($getFirewallRuleset.Ruleset) has not been successfully updated."
                             $errorTrue = $true
                         }
-                        if ($getFirewallRulesetAllowedIPAddresses.AllowedIPAddresses -eq "") {
+                        if ($getFirewallRulesetAllowedIPAddresses.AllowedIPAddresses -eq "" -and $clearingAllowedSubnets -ne $true) {
                             Set-ESXiHostFirewallRuleset -ESXiHost $ESXiHost -Ruleset $Ruleset -AllowAll | Out-Null
                         }
                     }
