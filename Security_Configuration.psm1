@@ -1096,7 +1096,7 @@ Function Set-VCSAFirewallConfig {
         }
 
         $body = Initialize-NetworkingFirewallInboundSetRequestBody -Rules $rules
-        Invoke-SetNetworkingFirewallInbound -NetworkingFirewallInboundSetRequestBody $body
+        Invoke-SetNetworkingFirewallInbound -NetworkingFirewallInboundSetRequestBody $body | Out-Null
 
         $validateFirewall = Get-VCSAFirewallConfig -Server $Server
         if ($validateFirewall) {
