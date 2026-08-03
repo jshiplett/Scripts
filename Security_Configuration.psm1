@@ -1191,9 +1191,9 @@ Function Set-ESXiHostFirewall {
                     if ($getFirewallEnabled.Enabled -eq $false) {
                         Write-Output "[$ESXiHost] ESXi host firewall was successfully disabled."
                         
-                        $getFirewallEnabled
                     } else {
                         Write-Error "[$ESXiHost] ESXi host firewall was not successfully disabled."
+                        $errorTrue = $true
                     }
                 } elseif ($Enabled -eq $true -and $getFirewallConfig.Enabled -eq $false) {
                     $arguments = $esxcli.network.firewall.set.CreateArgs()
@@ -1205,14 +1205,15 @@ Function Set-ESXiHostFirewall {
                     if ($getFirewallEnabled.Enabled -eq $true) {
                         Write-Output "[$ESXiHost] ESXi host firewall was successfully enabled."
 
-                        $getFirewallEnabled
                     } else {
                         Write-Error "[$ESXiHost] ESXi host firewall was not successfully enabled."
+                        $errorTrue = $true
                     }                
                 } elseif ($Enabled -eq $true -and $getFirewallConfig.Enabled -eq $true) {
                     Write-Error "[$ESXiHost] ESXi host firewall is already enabled."
                 } elseif ($Enabled -eq $false -and $getFirewallConfig.Enabled -eq $false) {
                     Write-Error "[$ESXiHost] ESXi host firewall is already disabled."
+                    $errorTrue = $true
                 }
             }
             if ($DefaultAction) {
@@ -1226,9 +1227,9 @@ Function Set-ESXiHostFirewall {
                     if ($getFirewallDefaultAction.DefaultAction -eq "PASS") {
                         Write-Output "[$ESXiHost] ESXi host firewall default action was successfully set to $DefaultAction."
                 
-                        $getFirewallDefaultAction
                     } else {
                         Write-Error "[$ESXiHost] ESXi host firewall default action was not successfully set to $DefaultAction."
+                        $errorTrue = $true
                     }                
                 } elseif ($DefaultAction -eq "DROP" -and $getFirewallConfig.DefaultAction -eq "PASS") {
                     $arguments = $esxcli.network.firewall.set.CreateArgs()
@@ -1239,16 +1240,21 @@ Function Set-ESXiHostFirewall {
                     $getFirewallDefaultAction = Get-ESXiHostFirewall -ESXiHost $ESXiHost
                     if ($getFirewallDefaultAction.DefaultAction -eq "DROP") {
                         Write-Output "[$ESXiHost] ESXi host firewall default action was successfully set to $DefaultAction."
-                        
-                        $getFirewallDefaultAction
                     } else {
                         Write-Error "[$ESXiHost] ESXi host firewall default action was not successfully set to $DefaultAction."
+                        $errorTrue = $true
                     }    
                 } elseif ($DefaultAction -eq "PASS" -and $getFirewallConfig.DefaultAction -eq "PASS") {
                     Write-Error "[$ESXiHost] ESXi host firewall default action is already set to PASS."
+                    $errorTrue = $true
                 } elseif ($DefaultAction -eq "DROP" -and $getFirewallConfig.DefaultAction -eq "DROP") {
                     Write-Error "[$ESXiHost] ESXi host firewall default action is already set to DROP."
+                    $errorTrue = $true
                 }
+            }
+            if ($errorTrue -ne $true) {
+                $returnFirewall = Get-ESXiHostFirewall -ESXiHost $ESXiHost
+                $returnFirewall
             }
         }
     } else {
