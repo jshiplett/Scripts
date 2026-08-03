@@ -37,3 +37,19 @@ if ($testCsvInput -eq $false) {
         }
     }
 }
+
+if ($AddorRemove -eq "Add") {
+    foreach ($rule in $rules) {
+        $testRule = Get-ESXiHostFirewallRuleset -ESXiHost $rule.host -Ruleset $rule.ruleset
+        if ($testRule.AllowedIPAddresses -notmatch $rule.allowedip) {
+            Write-Error "[$ESXiHost] Unable to verify ESXi host firewall configuration."
+        }
+    }
+} elseif ($AddorRemove -eq "Remove") {
+    foreach ($rule in $rules) {
+        $testRule = Get-ESXiHostFirewallRuleset -ESXiHost $rule.host -Ruleset $rule.ruleset
+        if ($testRule.AllowedIPAddresses -match $rule.allowedip) {
+            Write-Error "[$ESXiHost] Unable to verify ESXi host firewall configuration."
+        }
+    }
+}
